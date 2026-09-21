@@ -1,53 +1,82 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
-	"sync"
 
 	"go-app/internal/task"
+
+	_ "modernc.org/sqlite"
 )
 
-var (
-	tasks  = []task.Task{}
-	nextID = 1
-	mu     sync.Mutex
-)
+var db *sql.DB
 
 func main() {
-	mux := http.NewServeMux()
+	var err error
+	// Open SQLite database file
+	db, err = sql.Open("sqlite", "./app.db")
+	if err != nil {
+		log.Fatalf("Failed to open DB: %v", err)
+	}
+	defer db.Close()
 
+	// Create table if it doesn't exist
+	createTable := `
+	CREATE TABLE IF NOT EXISTS tasks (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		title TEXT NOT NULL,
+		done BOOLEAN NOT NULL DEFAULT 0,
+		task_group TEXT DEFAULT ''
+	);`
+	if _, err := db.Exec(createTable); err != nil {
+		log.Fatalf("Failed to initialize DB schema: %v", err)
+	}
+
+	mux := http.NewServeMux()
 	mux.HandleFunc("GET /tasks", getTasks)
 	mux.HandleFunc("POST /tasks", createTask)
 	mux.HandleFunc("PATCH /tasks/{id}/toggle", toggleTask)
 	mux.HandleFunc("DELETE /tasks/{id}", deleteTask)
 	mux.HandleFunc("GET /groups", getGroups)
 
-	fmt.Println("Server running on http://localhost:8080")
-	http.ListenAndServe(":8080", mux)
+	fmt.Println("Server running on :8081")
+	log.Fatal(http.ListenAndServe(":8081", mux))
 }
 
 func getTasks(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	groupFilter := r.URL.Query().Get("group")
 
-	mu.Lock()
-	defer mu.Unlock()
+	var rows *sql.Rows
+	var err error
 
 	if groupFilter == "" {
-		json.NewEncoder(w).Encode(tasks)
-		return
+		rows, err = db.Query("SELECT id, title, done, COALESCE(task_group, '') FROM tasks ORDER BY id ASC")
+	} else {
+		rows, err = db.Query("SELECT id, title, done, COALESCE(task_group, '') FROM tasks WHERE task_group = ? ORDER BY id ASC", groupFilter)
 	}
 
-	filtered := []task.Task{}
-	for _, t := range tasks {
-		if t.Group == groupFilter {
-			filtered = append(filtered, t)
-		}
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
-	json.NewEncoder(w).Encode(filtered)
+	defer rows.Close()
+
+	tasks := []task.Task{}
+	for rows.Next() {
+		var t task.Task
+		if err := rows.Scan(&t.ID, &t.Title, &t.Done, &t.Group); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		tasks = append(tasks, t)
+	}
+
+	json.NewEncoder(w).Encode(tasks)
 }
 
 func createTask(w http.ResponseWriter, r *http.Request) {
@@ -57,11 +86,14 @@ func createTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	mu.Lock()
-	t.ID = nextID
-	nextID++
-	tasks = append(tasks, t)
-	mu.Unlock()
+	res, err := db.Exec("INSERT INTO tasks (title, task_group) VALUES (?, ?)", t.Title, t.Group)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	id, _ := res.LastInsertId()
+	t.ID = int(id)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
@@ -75,19 +107,22 @@ func toggleTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	mu.Lock()
-	defer mu.Unlock()
-
-	for i := range tasks {
-		if tasks[i].ID == id {
-			tasks[i].Done = !tasks[i].Done
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(tasks[i])
-			return
-		}
+	_, err = db.Exec("UPDATE tasks SET done = NOT done WHERE id = ?", id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
-	http.Error(w, "Task not found", http.StatusNotFound)
+	var t task.Task
+	err = db.QueryRow("SELECT id, title, done, COALESCE(task_group, '') FROM tasks WHERE id = ?", id).
+		Scan(&t.ID, &t.Title, &t.Done, &t.Group)
+	if err != nil {
+		http.Error(w, "Task not found", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(t)
 }
 
 func deleteTask(w http.ResponseWriter, r *http.Request) {
@@ -97,45 +132,55 @@ func deleteTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	mu.Lock()
-	defer mu.Unlock()
-
-	found := false
-	for i, t := range tasks {
-		if t.ID == id {
-			tasks = append(tasks[:i], tasks[i+1:]...)
-			found = true
-			break
-		}
+	res, err := db.Exec("DELETE FROM tasks WHERE id = ?", id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
-	if !found {
+	rowsAffected, _ := res.RowsAffected()
+	if rowsAffected == 0 {
 		http.Error(w, "Task not found", http.StatusNotFound)
 		return
 	}
 
-	// 1. Remap IDs upon task deletion
-	for i := range tasks {
-		tasks[i].ID = i + 1
-	}
-	nextID = len(tasks) + 1
+	// Dynamic ID remapping in SQLite
+	_, _ = db.Exec(`
+		CREATE TABLE tasks_temp AS SELECT title, done, task_group FROM tasks ORDER BY id ASC;
+		DROP TABLE tasks;
+		CREATE TABLE tasks (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			title TEXT NOT NULL,
+			done BOOLEAN NOT NULL DEFAULT 0,
+			task_group TEXT DEFAULT ''
+		);
+		INSERT INTO tasks (title, done, task_group) SELECT title, done, task_group FROM tasks_temp;
+		DROP TABLE tasks_temp;
+	`)
 
 	w.WriteHeader(http.StatusNoContent)
 }
 
 func getGroups(w http.ResponseWriter, r *http.Request) {
-	mu.Lock()
-	defer mu.Unlock()
+	rows, err := db.Query("SELECT COALESCE(task_group, 'default'), COUNT(*) FROM tasks GROUP BY task_group")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
 
-	groupMap := make(map[string]int)
-	for _, t := range tasks {
-		g := t.Group
-		if g == "" {
-			g = "default"
+	groups := make(map[string]int)
+	for rows.Next() {
+		var name string
+		var count int
+		if err := rows.Scan(&name, &count); err == nil {
+			if name == "" {
+				name = "default"
+			}
+			groups[name] = count
 		}
-		groupMap[g]++
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(groupMap)
+	json.NewEncoder(w).Encode(groups)
 }

@@ -69,7 +69,7 @@ Launch the REST server in a terminal window:
 go run ./cmd/server
 ```
 
-Server now runs locally on `[buah](http://localhost:8080).` You can obsviously chose to run it anywhere. I hava personnaly chosen to deploy it on my VPS in order to add, edit and view tasks anywhere, anytime.
+Server now runs locally on `[http://localhost:8081](http://localhost:8081).` You can obsviously chose to run it anywhere. I have personnaly chosen to deploy it on my VPS in order to add, edit and view tasks anywhere, anytime.
 
 ## 🖥️ CLI Usage (`taskctl`)
 
@@ -126,7 +126,7 @@ Launch the full-screen terminal interface:
 
 ```bash
 # Example curl request
-curl -X POST http://localhost:8080/tasks \
+curl -X POST http://localhost:8081/tasks \
   -H "Content-Type: application/json" \
   -d '{"title":"Configure firewall", "group":"devops"}'
 ```

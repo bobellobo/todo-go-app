@@ -29,5 +29,5 @@ func Execute() {
 
 func init() {
 	// flag available to all subcommands
-	rootCmd.PersistentFlags().StringVarP(&apiURL, "url", "u", "http://localhost:8080", "Base URL of the REST API")
+	rootCmd.PersistentFlags().StringVarP(&apiURL, "url", "u", "http://localhost:8081", "Base URL of the REST API")
 }
