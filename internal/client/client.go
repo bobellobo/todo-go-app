@@ -39,6 +39,21 @@ func (c *Client) newRequest(method, endpoint string, body io.Reader) (*http.Requ
 	return req, nil
 }
 
+func checkResponse(resp *http.Response) error {
+	if resp.StatusCode >= http.StatusOK && resp.StatusCode < http.StatusMultipleChoices {
+		return nil
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("API request failed with status %s", resp.Status)
+	}
+	if len(body) == 0 {
+		return fmt.Errorf("API request failed with status %s", resp.Status)
+	}
+	return fmt.Errorf("API request failed with status %s: %s", resp.Status, string(body))
+}
+
 func (c *Client) ListTasks(group string) ([]task.Task, error) {
 	endpoint := c.BaseURL + "/tasks"
 	if group != "" {
@@ -54,6 +69,9 @@ func (c *Client) ListTasks(group string) ([]task.Task, error) {
 		return nil, fmt.Errorf("server unreachable: %w", err)
 	}
 	defer resp.Body.Close()
+	if err := checkResponse(resp); err != nil {
+		return nil, err
+	}
 
 	var tasks []task.Task
 	if err := json.NewDecoder(resp.Body).Decode(&tasks); err != nil {
@@ -76,6 +94,9 @@ func (c *Client) AddTask(title, group string) (*task.Task, error) {
 		return nil, fmt.Errorf("server unreachable: %w", err)
 	}
 	defer resp.Body.Close()
+	if err := checkResponse(resp); err != nil {
+		return nil, err
+	}
 
 	var t task.Task
 	if err := json.NewDecoder(resp.Body).Decode(&t); err != nil {
@@ -98,6 +119,9 @@ func (c *Client) ToggleTask(id string) (*task.Task, error) {
 
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, fmt.Errorf("task ID %s not found", id)
+	}
+	if err := checkResponse(resp); err != nil {
+		return nil, err
 	}
 
 	var t task.Task
@@ -122,6 +146,9 @@ func (c *Client) DeleteTask(id string) error {
 	if resp.StatusCode == http.StatusNotFound {
 		return fmt.Errorf("task ID %s not found", id)
 	}
+	if err := checkResponse(resp); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -135,6 +162,9 @@ func (c *Client) ListGroups() (map[string]int, error) {
 		return nil, fmt.Errorf("server unreachable: %w", err)
 	}
 	defer resp.Body.Close()
+	if err := checkResponse(resp); err != nil {
+		return nil, err
+	}
 
 	var groups map[string]int
 	if err := json.NewDecoder(resp.Body).Decode(&groups); err != nil {
