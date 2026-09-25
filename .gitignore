@@ -2,3 +2,5 @@ app.db
 server
 taskctl
 taskctl.exe
+Launch-TodoTUI.ps1
+taskctl.exe.backup

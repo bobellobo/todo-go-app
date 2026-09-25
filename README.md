@@ -47,7 +47,7 @@ A modular, high-performance Task Management system written in Go. Includes a nat
 
 ## 🛠️ Prerequisites
 
-- **Go 1.22+** (Go 1.22 or higher is required for standard library path wildcards).
+- **Go 1.27+** (the version declared by `go.mod`).
 
 ## 🚀 Getting started
 
@@ -55,37 +55,149 @@ A modular, high-performance Task Management system written in Go. Includes a nat
 
 ```bash
 # Clone repository
-git clone [https://github.com/bobellobo/todo-go-app.git](https://github.com/bobellobo/todo-go-app.git)
+git clone https://github.com/bobellobo/todo-go-app.git
 cd go-app
 
 # Download dependencies
 go mod download
 ```
 
-### 2. Start the API server
+## 🌐 Deploying the API server
 
-Launch the REST server in a terminal window: 
+The server is a standalone Go process backed by SQLite. It listens on port `8081`
+and creates `app.db` in its current working directory. Keep that file on persistent
+storage and back it up; it contains all tasks.
+
+### Run locally
+
+Start the server from the repository root:
+
 ```bash
 go run ./cmd/server
 ```
 
-Server now runs locally on `[http://localhost:8081](http://localhost:8081).` You can obsviously chose to run it anywhere. I have personnaly chosen to deploy it on my VPS in order to add, edit and view tasks anywhere, anytime.
+The API is then available at `http://localhost:8081`.
 
-## 🖥️ CLI Usage (`taskctl`)
+### Build and run on a Linux server
 
-You can run `taskctl` directly via go run or compile the executable binary:
+Install Go on the server, clone the repository, and build the server binary:
 
 ```bash
-# Build binary
-go build -o taskctl ./cmd/taskctl
-
-# Optional: Install globally to system PATH
-go install ./cmd/taskctl
+git clone https://github.com/bobellobo/todo-go-app.git
+cd todo-go-app
+go mod download
+go build -o todo-server ./cmd/server
+./todo-server
 ```
+
+For a persistent deployment, create a dedicated service account and run the binary
+with a service manager such as `systemd`. Example service file:
+
+```ini
+# /etc/systemd/system/todo-server.service
+[Unit]
+Description=Todo REST API
+After=network.target
+
+[Service]
+User=todo
+Group=todo
+WorkingDirectory=/opt/todo-go-app
+ExecStart=/opt/todo-go-app/todo-server
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Install and start the service:
+
+```bash
+sudo useradd --system --home /opt/todo-go-app --shell /usr/sbin/nologin todo
+sudo chown -R todo:todo /opt/todo-go-app
+sudo systemctl daemon-reload
+sudo systemctl enable --now todo-server
+sudo systemctl status todo-server
+```
+
+The server currently binds to `:8081`. For public access, put it behind a
+reverse proxy with HTTPS and expose only the proxy port (normally `443`).
+Do not expose the SQLite database file or run the process as `root`. Configure
+firewall rules so port `8081` is reachable only from the reverse proxy or trusted
+clients. The API does not currently implement authentication, so do not publish
+it directly to the internet without adding an authentication layer.
+
+Verify the deployment from the server or a trusted client:
+
+```bash
+curl http://127.0.0.1:8081/tasks
+curl http://127.0.0.1:8081/groups
+```
+
+## 🖥️ Build and use the CLI (`taskctl`)
+
+Build the CLI from the repository root:
+
+```bash
+go build -o taskctl ./cmd/taskctl
+```
+
+On Windows, build `taskctl.exe` instead:
+
+```powershell
+go build -o taskctl.exe ./cmd/taskctl
+```
+
+The CLI uses `http://localhost:8081` by default. For a remote server, configure
+the base URL with the `TASKCTL_API_URL` environment variable. Set it once per
+terminal session:
+
+**PowerShell:**
+
+```powershell
+$env:TASKCTL_API_URL = "https://api.example.com"
+.\taskctl.exe list
+```
+
+**Command Prompt:**
+
+```cmd
+set TASKCTL_API_URL=https://api.example.com
+taskctl.exe list
+```
+
+**Linux/macOS:**
+
+```bash
+export TASKCTL_API_URL="https://api.example.com"
+./taskctl list
+```
+
+To persist the value, add the corresponding `export` command to your shell
+profile, or set a Windows user environment variable and open a new terminal:
+
+```powershell
+[Environment]::SetEnvironmentVariable(
+  "TASKCTL_API_URL",
+  "https://api.example.com",
+  "User"
+)
+```
+
+For a one-time override, use the `--url` flag. The flag takes precedence over
+the environment variable:
+
+```bash
+./taskctl --url https://api.example.com list
+```
+
+The URL should contain only the scheme and host (and, if needed, a path prefix);
+do not add `/tasks` or `/groups`, because the CLI appends those paths.
 
 ### CLI Commands
 
-| Action | Comand example |
+| Action | Command example |
 | ----------- | ----------- |
 | List all tasks | `./taskctl list` |
 | List tasks in group | `./taskctl list group-name` |
@@ -97,7 +209,8 @@ go install ./cmd/taskctl
 | Launch TUI | `./taskctl tui` |
 
 ## 🎨 Interactive TUI
-Launch the full-screen terminal interface:
+The TUI uses the same API URL configuration as the CLI. After setting
+`TASKCTL_API_URL`, launch the full-screen terminal interface:
 
 ```bash
 ./taskctl tui

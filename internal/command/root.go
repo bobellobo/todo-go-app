@@ -12,6 +12,8 @@ var (
 	TaskClient *client.Client
 )
 
+const defaultAPIURL = "http://localhost:8081"
+
 var rootCmd = &cobra.Command{
 	Use:   "taskctl",
 	Short: "taskctl is a command line tool to manage your tasks API",
@@ -29,5 +31,10 @@ func Execute() {
 
 func init() {
 	// flag available to all subcommands
-	rootCmd.PersistentFlags().StringVarP(&apiURL, "url", "u", "http://localhost:8081", "Base URL of the REST API")
+	if configuredURL := os.Getenv("TASKCTL_API_URL"); configuredURL != "" {
+		apiURL = configuredURL
+	} else {
+		apiURL = defaultAPIURL
+	}
+	rootCmd.PersistentFlags().StringVarP(&apiURL, "url", "u", apiURL, "Base URL of the REST API")
 }
