@@ -301,6 +301,19 @@ The TUI uses the same API URL configuration as the CLI. After setting
 - `r`: Refresh tasks from API 
 - `q`: Exit TUI
 
+### TUI preview
+
+The interface is a full-screen Bubble Tea application with colored task states,
+group badges, an add-task input, and an interactive group filter:
+
+<p>
+  <img src="docs/tui-normal.svg" alt="taskctl TUI task list" width="800">
+</p>
+<p>
+  <img src="docs/tui-add-task.svg" alt="taskctl TUI add-task mode" width="800">
+  <img src="docs/tui-groups.svg" alt="taskctl TUI group filter menu" width="800">
+</p>
+
 ## REST API Reference
 
 | Method | Route | Description |

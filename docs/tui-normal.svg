@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="520" viewBox="0 0 1000 520" role="img" aria-labelledby="title desc">
+  <title id="title">taskctl TUI task list</title>
+  <desc id="desc">A terminal-style task list showing completed and active tasks, group badges, and keyboard shortcuts.</desc>
+  <rect width="1000" height="520" rx="14" fill="#101014"/>
+  <rect x="28" y="24" width="944" height="472" rx="8" fill="#17171c" stroke="#30303a"/>
+  <rect x="52" y="48" width="250" height="38" rx="4" fill="#7D56F4"/>
+  <text x="66" y="74" fill="#FAFAFA" font-family="monospace" font-size="20" font-weight="700">TASK MANAGER TUI</text>
+  <text x="326" y="74" fill="#04B575" font-family="monospace" font-size="18" font-weight="700">[All Groups]</text>
+  <text x="70" y="132" fill="#75C6FF" font-family="monospace" font-size="20" font-weight="700">❯</text>
+  <text x="104" y="132" fill="#FF5F87" font-family="monospace" font-size="20" font-weight="700">[ ]</text>
+  <text x="160" y="132" fill="#75C6FF" font-family="monospace" font-size="20" font-weight="700">#1</text>
+  <text x="220" y="132" fill="#FFAF00" font-family="monospace" font-size="20" font-style="italic">@devops</text>
+  <text x="350" y="132" fill="#75C6FF" font-family="monospace" font-size="20" font-weight="700">Deploy app</text>
+  <text x="104" y="178" fill="#04B575" font-family="monospace" font-size="20" font-weight="700">[✓]</text>
+  <text x="160" y="178" fill="#D8D8E0" font-family="monospace" font-size="20">#2</text>
+  <text x="220" y="178" fill="#FFAF00" font-family="monospace" font-size="20" font-style="italic">@personal</text>
+  <text x="370" y="178" fill="#D8D8E0" font-family="monospace" font-size="20">Buy groceries</text>
+  <text x="104" y="224" fill="#FF5F87" font-family="monospace" font-size="20" font-weight="700">[ ]</text>
+  <text x="160" y="224" fill="#D8D8E0" font-family="monospace" font-size="20">#3</text>
+  <text x="220" y="224" fill="#FFAF00" font-family="monospace" font-size="20" font-style="italic">@devops</text>
+  <text x="350" y="224" fill="#D8D8E0" font-family="monospace" font-size="20">Review deployment logs</text>
+  <line x1="68" y1="270" x2="932" y2="270" stroke="#30303a"/>
+  <text x="70" y="314" fill="#626262" font-family="monospace" font-size="16">j/k/↑/↓: navigate • space: toggle • a: add • g: groups menu</text>
+  <text x="70" y="344" fill="#626262" font-family="monospace" font-size="16">d: delete • q: quit</text>
+</svg>

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="520" viewBox="0 0 1000 520" role="img" aria-labelledby="title desc">
+  <title id="title">taskctl TUI group filter menu</title>
+  <desc id="desc">A terminal-style group filter menu showing all tasks, devops, and personal groups.</desc>
+  <rect width="1000" height="520" rx="14" fill="#101014"/>
+  <rect x="28" y="24" width="944" height="472" rx="8" fill="#17171c" stroke="#30303a"/>
+  <rect x="52" y="48" width="250" height="38" rx="4" fill="#7D56F4"/>
+  <text x="66" y="74" fill="#FAFAFA" font-family="monospace" font-size="20" font-weight="700">TASK MANAGER TUI</text>
+  <text x="326" y="74" fill="#04B575" font-family="monospace" font-size="18" font-weight="700">[All Groups]</text>
+  <rect x="68" y="112" width="864" height="260" rx="5" fill="#202027" stroke="#444451"/>
+  <text x="94" y="151" fill="#FAFAFA" font-family="monospace" font-size="21" font-weight="700">Select Group Filter</text>
+  <text x="108" y="203" fill="#75C6FF" font-family="monospace" font-size="20" font-weight="700">❯ All Tasks</text>
+  <text x="300" y="203" fill="#626262" font-family="monospace" font-size="16">Show all tasks across all groups</text>
+  <text x="108" y="249" fill="#FAFAFA" font-family="monospace" font-size="20">  devops</text>
+  <text x="300" y="249" fill="#626262" font-family="monospace" font-size="16">2 task(s)</text>
+  <text x="108" y="295" fill="#FAFAFA" font-family="monospace" font-size="20">  personal</text>
+  <text x="300" y="295" fill="#626262" font-family="monospace" font-size="16">1 task(s)</text>
+  <text x="70" y="424" fill="#626262" font-family="monospace" font-size="16">↑/↓: navigate • enter: filter group • esc: back</text>
+</svg>
