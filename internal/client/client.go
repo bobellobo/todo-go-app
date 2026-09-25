@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"time"
@@ -13,16 +14,29 @@ import (
 
 type Client struct {
 	BaseURL    string
+	APIToken   string
 	HTTPClient *http.Client
 }
 
-func NewClient(baseURL string) *Client {
+func NewClient(baseURL, apiToken string) *Client {
 	return &Client{
-		BaseURL: baseURL,
+		BaseURL:  baseURL,
+		APIToken: apiToken,
 		HTTPClient: &http.Client{
 			Timeout: 5 * time.Second,
 		},
 	}
+}
+
+func (c *Client) newRequest(method, endpoint string, body io.Reader) (*http.Request, error) {
+	req, err := http.NewRequest(method, endpoint, body)
+	if err != nil {
+		return nil, err
+	}
+	if c.APIToken != "" {
+		req.Header.Set("Authorization", "Bearer "+c.APIToken)
+	}
+	return req, nil
 }
 
 func (c *Client) ListTasks(group string) ([]task.Task, error) {
@@ -31,7 +45,11 @@ func (c *Client) ListTasks(group string) ([]task.Task, error) {
 		endpoint += "?group=" + url.QueryEscape(group)
 	}
 
-	resp, err := c.HTTPClient.Get(endpoint)
+	req, err := c.newRequest(http.MethodGet, endpoint, nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("server unreachable: %w", err)
 	}
@@ -48,7 +66,12 @@ func (c *Client) AddTask(title, group string) (*task.Task, error) {
 	payload := task.Task{Title: title, Group: group}
 	body, _ := json.Marshal(payload)
 
-	resp, err := c.HTTPClient.Post(c.BaseURL+"/tasks", "application/json", bytes.NewBuffer(body))
+	req, err := c.newRequest(http.MethodPost, c.BaseURL+"/tasks", bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("server unreachable: %w", err)
 	}
@@ -62,7 +85,7 @@ func (c *Client) AddTask(title, group string) (*task.Task, error) {
 }
 
 func (c *Client) ToggleTask(id string) (*task.Task, error) {
-	req, err := http.NewRequest(http.MethodPatch, c.BaseURL+"/tasks/"+id+"/toggle", nil)
+	req, err := c.newRequest(http.MethodPatch, c.BaseURL+"/tasks/"+id+"/toggle", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +108,7 @@ func (c *Client) ToggleTask(id string) (*task.Task, error) {
 }
 
 func (c *Client) DeleteTask(id string) error {
-	req, err := http.NewRequest(http.MethodDelete, c.BaseURL+"/tasks/"+id, nil)
+	req, err := c.newRequest(http.MethodDelete, c.BaseURL+"/tasks/"+id, nil)
 	if err != nil {
 		return err
 	}
@@ -103,7 +126,11 @@ func (c *Client) DeleteTask(id string) error {
 }
 
 func (c *Client) ListGroups() (map[string]int, error) {
-	resp, err := c.HTTPClient.Get(c.BaseURL + "/groups")
+	req, err := c.newRequest(http.MethodGet, c.BaseURL+"/groups", nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("server unreachable: %w", err)
 	}

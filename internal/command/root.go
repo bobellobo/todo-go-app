@@ -9,6 +9,7 @@ import (
 
 var (
 	apiURL     string
+	apiToken   string
 	TaskClient *client.Client
 )
 
@@ -19,7 +20,7 @@ var rootCmd = &cobra.Command{
 	Short: "taskctl is a command line tool to manage your tasks API",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		// init client before running any command
-		TaskClient = client.NewClient(apiURL)
+		TaskClient = client.NewClient(apiURL, apiToken)
 	},
 }
 
@@ -36,5 +37,6 @@ func init() {
 	} else {
 		apiURL = defaultAPIURL
 	}
+	apiToken = os.Getenv("TASKCTL_API_TOKEN")
 	rootCmd.PersistentFlags().StringVarP(&apiURL, "url", "u", apiURL, "Base URL of the REST API")
 }

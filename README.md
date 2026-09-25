@@ -125,14 +125,77 @@ The server currently binds to `:8081`. For public access, put it behind a
 reverse proxy with HTTPS and expose only the proxy port (normally `443`).
 Do not expose the SQLite database file or run the process as `root`. Configure
 firewall rules so port `8081` is reachable only from the reverse proxy or trusted
-clients. The API does not currently implement authentication, so do not publish
-it directly to the internet without adding an authentication layer.
+clients. The server requires a bearer token in the `Authorization` header.
+
+### Configure API authentication
+
+Generate a long random token on the server and keep it out of the repository:
+
+```bash
+openssl rand -hex 32
+```
+
+Set the resulting value as `TODO_API_TOKEN` in the server's environment. The
+server refuses to start if this variable is missing:
+
+```bash
+export TODO_API_TOKEN="replace-with-a-long-random-token"
+./todo-server
+```
+
+For the `systemd` deployment above, add an environment file readable only by
+the service account:
+
+```bash
+sudo install -o todo -g todo -m 600 /dev/null /opt/todo-go-app/server.env
+sudo sh -c 'printf "TODO_API_TOKEN=%s\n" "replace-with-a-long-random-token" > /opt/todo-go-app/server.env'
+```
+
+Add this line to the `[Service]` section:
+
+```ini
+EnvironmentFile=/opt/todo-go-app/server.env
+```
+
+Then restart the service:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl restart todo-server
+```
+
+The token is validated by the Go server using a constant-time comparison.
+Requests without the exact header receive `401 Unauthorized`:
+
+```bash
+curl -H "Authorization: Bearer replace-with-a-long-random-token" \
+  http://127.0.0.1:8081/tasks
+```
+
+### Caddy reverse proxy
+
+Caddy terminates HTTPS and forwards the `Authorization` header to the Go
+server. A minimal Caddyfile is:
+
+```caddyfile
+api.example.com {
+    reverse_proxy 127.0.0.1:8081
+}
+```
+
+Keep port `8081` closed to the public internet and allow it only from the
+local machine or the private network. The Go server remains responsible for
+checking the token, so authentication cannot be bypassed by connecting
+directly to the backend. Do not put the token in the Caddyfile or in a
+publicly tracked configuration file.
 
 Verify the deployment from the server or a trusted client:
 
 ```bash
-curl http://127.0.0.1:8081/tasks
-curl http://127.0.0.1:8081/groups
+curl -H "Authorization: Bearer replace-with-a-long-random-token" \
+  http://127.0.0.1:8081/tasks
+curl -H "Authorization: Bearer replace-with-a-long-random-token" \
+  http://127.0.0.1:8081/groups
 ```
 
 ## 🖥️ Build and use the CLI (`taskctl`)
@@ -150,13 +213,15 @@ go build -o taskctl.exe ./cmd/taskctl
 ```
 
 The CLI uses `http://localhost:8081` by default. For a remote server, configure
-the base URL with the `TASKCTL_API_URL` environment variable. Set it once per
+the base URL with the `TASKCTL_API_URL` environment variable and the bearer
+token with `TASKCTL_API_TOKEN`. Set them once per
 terminal session:
 
 **PowerShell:**
 
 ```powershell
 $env:TASKCTL_API_URL = "https://api.example.com"
+$env:TASKCTL_API_TOKEN = "replace-with-a-long-random-token"
 .\taskctl.exe list
 ```
 
@@ -164,6 +229,7 @@ $env:TASKCTL_API_URL = "https://api.example.com"
 
 ```cmd
 set TASKCTL_API_URL=https://api.example.com
+set TASKCTL_API_TOKEN=replace-with-a-long-random-token
 taskctl.exe list
 ```
 
@@ -171,6 +237,7 @@ taskctl.exe list
 
 ```bash
 export TASKCTL_API_URL="https://api.example.com"
+export TASKCTL_API_TOKEN="replace-with-a-long-random-token"
 ./taskctl list
 ```
 
@@ -181,6 +248,11 @@ profile, or set a Windows user environment variable and open a new terminal:
 [Environment]::SetEnvironmentVariable(
   "TASKCTL_API_URL",
   "https://api.example.com",
+  "User"
+)
+[Environment]::SetEnvironmentVariable(
+  "TASKCTL_API_TOKEN",
+  "replace-with-a-long-random-token",
   "User"
 )
 ```
@@ -194,6 +266,9 @@ the environment variable:
 
 The URL should contain only the scheme and host (and, if needed, a path prefix);
 do not add `/tasks` or `/groups`, because the CLI appends those paths.
+The CLI and TUI attach `Authorization: Bearer <TASKCTL_API_TOKEN>` to every
+API request. Never commit the token, print it in logs, or paste it into a
+public issue or shell history.
 
 ### CLI Commands
 

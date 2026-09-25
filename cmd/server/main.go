@@ -1,12 +1,15 @@
 package main
 
 import (
+	"crypto/subtle"
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
+	"strings"
 
 	"go-app/internal/task"
 
@@ -35,6 +38,10 @@ func main() {
 	if _, err := db.Exec(createTable); err != nil {
 		log.Fatalf("Failed to initialize DB schema: %v", err)
 	}
+	apiToken := os.Getenv("TODO_API_TOKEN")
+	if apiToken == "" {
+		log.Fatal("TODO_API_TOKEN must be set")
+	}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /tasks", getTasks)
@@ -44,7 +51,26 @@ func main() {
 	mux.HandleFunc("GET /groups", getGroups)
 
 	fmt.Println("Server running on :8081")
-	log.Fatal(http.ListenAndServe(":8081", mux))
+	log.Fatal(http.ListenAndServe(":8081", requireBearerToken(apiToken, mux)))
+}
+
+func requireBearerToken(expected string, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		const prefix = "Bearer "
+		authorization := r.Header.Get("Authorization")
+		if !strings.HasPrefix(authorization, prefix) {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		provided := strings.TrimSpace(strings.TrimPrefix(authorization, prefix))
+		if provided == "" || subtle.ConstantTimeCompare([]byte(provided), []byte(expected)) != 1 {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }
 
 func getTasks(w http.ResponseWriter, r *http.Request) {
