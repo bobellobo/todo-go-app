@@ -58,6 +58,7 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", web.RenderPage)
+	web.RegisterStaticRoutes(mux)
 	mux.Handle("/", requireBearerToken(apiToken, protectedMux))
 
 	fmt.Println("Server running on :8081")

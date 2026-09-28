@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#f6f3ec">
+  <link rel="manifest" href="/manifest.json">
   <title>Little by little — Fieldnotes</title>
   <script src="https://unpkg.com/htmx.org@1.9.10"></script>
   <style>
@@ -310,6 +311,11 @@
     if (localStorage.getItem('app_bearer_token')) {
       document.getElementById('auth-section').hidden = true;
       loadGroupFilterOptions();
+    }
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js')
+        .catch((err) => console.error('Service worker registration failed:', err));
     }
   </script>
 </body>
