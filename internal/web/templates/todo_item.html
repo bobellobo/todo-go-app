@@ -1,0 +1,23 @@
+<div id="todo-{{ .ID }}" class="flex items-center justify-between p-3 bg-white rounded shadow-sm border border-gray-200">
+  <span class="{{ if .Done }}line-through text-gray-400{{ else }}text-gray-800{{ end }} flex-grow mr-2 text-sm">
+    {{ .Title }}
+  </span>
+
+  <div class="flex gap-2">
+    <!-- Toggle Complete Status -->
+    <button hx-patch="/web/todos/{{ .ID }}/toggle"
+            hx-target="#todo-{{ .ID }}"
+            hx-swap="outerHTML"
+            class="text-xs px-2.5 py-1 rounded border {{ if .Done }}bg-gray-100 text-gray-600{{ else }}bg-green-50 text-green-700 border-green-200{{ end }}">
+      {{ if .Done }}Undo{{ else }}Done{{ end }}
+    </button>
+
+    <!-- Delete Task -->
+    <button hx-delete="/web/todos/{{ .ID }}"
+            hx-target="#todo-{{ .ID }}"
+            hx-swap="delete"
+            class="text-xs px-2.5 py-1 rounded bg-red-50 text-red-600 border border-red-200">
+      Delete
+    </button>
+  </div>
+</div>

@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"go-app/internal/task"
+	"go-app/internal/web"
 
 	_ "modernc.org/sqlite"
 )
@@ -43,15 +44,23 @@ func main() {
 		log.Fatal("TODO_API_TOKEN must be set")
 	}
 
+	protectedMux := http.NewServeMux()
+	protectedMux.HandleFunc("GET /tasks", getTasks)
+	protectedMux.HandleFunc("POST /tasks", createTask)
+	protectedMux.HandleFunc("PATCH /tasks/{id}/toggle", toggleTask)
+	protectedMux.HandleFunc("DELETE /tasks/{id}", deleteTask)
+	protectedMux.HandleFunc("GET /groups", getGroups)
+	protectedMux.HandleFunc("GET /web/todos", getWebTodos)
+	protectedMux.HandleFunc("POST /web/todos", createWebTodo)
+	protectedMux.HandleFunc("PATCH /web/todos/{id}/toggle", toggleWebTodo)
+	protectedMux.HandleFunc("DELETE /web/todos/{id}", deleteTask)
+
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /tasks", getTasks)
-	mux.HandleFunc("POST /tasks", createTask)
-	mux.HandleFunc("PATCH /tasks/{id}/toggle", toggleTask)
-	mux.HandleFunc("DELETE /tasks/{id}", deleteTask)
-	mux.HandleFunc("GET /groups", getGroups)
+	mux.HandleFunc("GET /{$}", web.RenderPage)
+	mux.Handle("/", requireBearerToken(apiToken, protectedMux))
 
 	fmt.Println("Server running on :8081")
-	log.Fatal(http.ListenAndServe(":8081", requireBearerToken(apiToken, mux)))
+	log.Fatal(http.ListenAndServe(":8081", mux))
 }
 
 func requireBearerToken(expected string, next http.Handler) http.Handler {
@@ -74,21 +83,26 @@ func requireBearerToken(expected string, next http.Handler) http.Handler {
 }
 
 func getTasks(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	groupFilter := r.URL.Query().Get("group")
+	tasks, err := loadTasks(r.URL.Query().Get("group"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(tasks)
+}
+
+func loadTasks(groupFilter string) ([]task.Task, error) {
 	var rows *sql.Rows
 	var err error
-
 	if groupFilter == "" {
 		rows, err = db.Query("SELECT id, title, done, COALESCE(task_group, '') FROM tasks ORDER BY id ASC")
 	} else {
 		rows, err = db.Query("SELECT id, title, done, COALESCE(task_group, '') FROM tasks WHERE task_group = ? ORDER BY id ASC", groupFilter)
 	}
-
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -96,13 +110,78 @@ func getTasks(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var t task.Task
 		if err := rows.Scan(&t.ID, &t.Title, &t.Done, &t.Group); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+			return nil, err
 		}
 		tasks = append(tasks, t)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return tasks, nil
+}
 
-	json.NewEncoder(w).Encode(tasks)
+func getWebTodos(w http.ResponseWriter, r *http.Request) {
+	tasks, err := loadTasks(r.URL.Query().Get("group"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	items := make([]interface{}, len(tasks))
+	for i := range tasks {
+		items[i] = tasks[i]
+	}
+	web.RenderList(w, items)
+}
+
+func createWebTodo(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Invalid form data", http.StatusBadRequest)
+		return
+	}
+	title := strings.TrimSpace(r.FormValue("title"))
+	if title == "" {
+		http.Error(w, "Title is required", http.StatusBadRequest)
+		return
+	}
+
+	result, err := db.Exec("INSERT INTO tasks (title) VALUES (?)", title)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	id, err := result.LastInsertId()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	web.RenderItem(w, task.Task{ID: int(id), Title: title})
+}
+
+func toggleWebTodo(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		http.Error(w, "Invalid ID format", http.StatusBadRequest)
+		return
+	}
+
+	_, err = db.Exec("UPDATE tasks SET done = NOT done WHERE id = ?", id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	var t task.Task
+	err = db.QueryRow("SELECT id, title, done, COALESCE(task_group, '') FROM tasks WHERE id = ?", id).
+		Scan(&t.ID, &t.Title, &t.Done, &t.Group)
+	if err == sql.ErrNoRows {
+		http.Error(w, "Task not found", http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	web.RenderItem(w, t)
 }
 
 func createTask(w http.ResponseWriter, r *http.Request) {
