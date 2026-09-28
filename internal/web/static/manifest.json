@@ -3,8 +3,8 @@
   "short_name": "Todos",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f6f3ec",
-  "theme_color": "#f6f3ec",
+  "background_color": "#fff4d6",
+  "theme_color": "#fff4d6",
   "icons": [
     {
       "src": "/static/icons/icon-192.png",

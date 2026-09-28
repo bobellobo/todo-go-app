@@ -3,22 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#f6f3ec">
+  <meta name="theme-color" content="#fff4d6">
   <link rel="manifest" href="/manifest.json">
-  <title>Little by little — Fieldnotes</title>
+  <title>"mùviti mbare</title>
   <script src="https://unpkg.com/htmx.org@1.9.10"></script>
   <style>
     :root {
       color-scheme: light;
-      --paper: #f6f3ec;
-      --card: #fffefa;
-      --ink: #292823;
-      --muted: #77746b;
-      --line: #e8e3d8;
-      --accent: #6b5b45;
-      --accent-dark: #514432;
-      --sage: #e9eee5;
-      --sage-ink: #516348;
+      --paper: #fff4d6;
+      --card: #fffdf5;
+      --ink: #28223e;
+      --muted: #766d87;
+      --line: #302744;
+      --accent: #6448db;
+      --accent-dark: #4932b4;
+      --sage: #c9f1df;
+      --sage-ink: #205a4d;
+      --coral: #ff7863;
+      --sun: #f6d443;
+      --lilac: #e8ddff;
     }
 
     * { box-sizing: border-box; }
@@ -27,7 +30,8 @@
       margin: 0;
       padding: 48px 20px 72px;
       background:
-        radial-gradient(ellipse at 12% 0%, rgba(222, 214, 194, .42), transparent 32rem),
+        radial-gradient(ellipse at 4% 8%, rgba(255, 120, 99, .28), transparent 22rem),
+        radial-gradient(ellipse at 96% 16%, rgba(100, 72, 219, .18), transparent 26rem),
         var(--paper);
       color: var(--ink);
       font-family: "Segoe UI", "Trebuchet MS", sans-serif;
@@ -38,7 +42,7 @@
       align-items: center;
       gap: 13px;
       margin-bottom: 54px;
-      color: var(--accent);
+      color: var(--ink);
       font-size: 12px;
       font-weight: 700;
       letter-spacing: .16em;
@@ -49,17 +53,19 @@
       width: 34px;
       height: 34px;
       place-items: center;
-      border: 1px solid #d8d0c0;
+      border: 2px solid var(--ink);
       border-radius: 50%;
+      background: var(--sun);
+      box-shadow: 3px 3px 0 var(--ink);
       font-family: Georgia, serif;
       font-size: 18px;
       font-weight: 400;
       letter-spacing: 0;
     }
-    .intro { margin-bottom: 30px; }
+    .intro { position: relative; margin-bottom: 30px; }
     .eyebrow {
       margin: 0 0 11px;
-      color: var(--accent);
+      color: #d64e51;
       font-size: 11px;
       font-weight: 700;
       letter-spacing: .15em;
@@ -72,13 +78,14 @@
       font-weight: 400;
       letter-spacing: -.045em;
       line-height: 1.04;
+      text-wrap: balance;
     }
     .subtitle { margin: 14px 0 0; color: var(--muted); font-size: 15px; }
     .composer, .auth-card {
-      border: 1px solid var(--line);
-      border-radius: 16px;
+      border: 2px solid var(--line);
+      border-radius: 18px;
       background: var(--card);
-      box-shadow: 0 12px 30px rgba(62, 53, 37, .045);
+      box-shadow: 6px 6px 0 var(--line);
     }
     .composer { padding: 19px; margin-bottom: 34px; }
     .composer-fields {
@@ -90,17 +97,17 @@
       width: 100%;
       min-width: 0;
       border: 1px solid var(--line);
-      border-radius: 10px;
+      border-radius: 11px;
       outline: none;
-      background: #fff;
+      background: #fffefa;
       color: var(--ink);
       font: inherit;
       font-size: 14px;
       padding: 12px 13px;
       transition: border-color .15s, box-shadow .15s;
     }
-    input::placeholder { color: #a09b90; }
-    input:focus { border-color: #a89a80; box-shadow: 0 0 0 3px rgba(107, 91, 69, .12); }
+    input::placeholder { color: #998fa9; }
+    input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(100, 72, 219, .16); }
     .composer-footer {
       display: flex;
       align-items: center;
@@ -118,7 +125,7 @@
       transition: background .15s, transform .15s;
     }
     button:active { transform: translateY(1px); }
-    .add-button { padding: 11px 17px; background: var(--accent); color: white; font-size: 13px; }
+    .add-button { padding: 11px 17px; background: var(--accent); color: white; font-size: 13px; box-shadow: 3px 3px 0 var(--ink); }
     .add-button:hover { background: var(--accent-dark); }
     .list-heading {
       display: flex;
@@ -131,7 +138,7 @@
       letter-spacing: .14em;
       text-transform: uppercase;
     }
-    .list-heading::after { height: 1px; flex: 1; background: var(--line); content: ""; }
+    .list-heading::after { height: 2px; flex: 1; background: var(--line); content: ""; }
     .list-toolbar {
       display: flex;
       align-items: center;
@@ -147,6 +154,7 @@
       padding: 8px 30px 8px 10px;
       border-radius: 9px;
       font-size: 12px;
+      background-color: var(--lilac);
     }
     .filter-error { margin: -5px 0 12px; color: #9a4f3f; font-size: 12px; }
     #todo-list { display: grid; gap: 9px; }
@@ -156,52 +164,72 @@
       justify-content: space-between;
       gap: 16px;
       padding: 15px 16px;
-      border: 1px solid var(--line);
-      border-radius: 13px;
+      border: 2px solid var(--line);
+      border-radius: 15px;
       background: var(--card);
-      box-shadow: 0 5px 15px rgba(62, 53, 37, .035);
+      box-shadow: 3px 3px 0 var(--line);
+      transition: transform .16s, box-shadow .16s, background .16s;
     }
+    .task-card:nth-child(3n + 1) { background: #fffdf5; }
+    .task-card:nth-child(3n + 2) { background: #f0eaff; }
+    .task-card:nth-child(3n) { background: #e4f8ee; }
+    .task-card:hover { transform: translate(-1px, -1px); box-shadow: 5px 5px 0 var(--line); }
     .task-main { display: flex; min-width: 0; align-items: flex-start; gap: 12px; }
-    .task-marker {
+    .task-checkbox {
+      appearance: none;
       display: grid;
-      width: 20px;
-      height: 20px;
-      flex: 0 0 20px;
+      width: 23px;
+      height: 23px;
+      flex: 0 0 23px;
       place-items: center;
-      margin-top: 1px;
-      border: 1px solid #c9c2b3;
-      border-radius: 50%;
-      color: transparent;
-      font-size: 12px;
-      line-height: 1;
+      margin: 0;
+      padding: 0;
+      border: 2px solid var(--ink);
+      border-radius: 7px;
+      background: #fffdf5;
+      cursor: pointer;
     }
+    .task-checkbox::before {
+      content: "✓";
+      color: white;
+      font-size: 15px;
+      font-weight: 800;
+      transform: scale(0);
+      transition: transform .12s ease-in-out;
+    }
+    .task-checkbox:checked { border-color: #24866c; background: #24866c; }
+    .task-checkbox:checked::before { transform: scale(1); }
+    .task-checkbox:focus-visible { outline: 3px solid var(--coral); outline-offset: 2px; }
+    .task-checkbox:disabled { cursor: wait; opacity: .65; }
+    .task-card.is-done .task-checkbox { border-color: #24866c; background: #24866c; }
+    .task-card.is-done .task-title { color: #766d87; text-decoration: line-through; }
+    .task-card.is-done .task-main { opacity: .78; }
+    .task-card.is-done { background: #e4f8ee; }
+    .task-card.is-done .task-checkbox::before { transform: scale(1); }
     .task-copy { min-width: 0; }
     .task-title { margin: 0; overflow-wrap: anywhere; font-size: 14px; line-height: 1.45; }
     .task-meta { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 7px; }
     .group-badge {
+      border: 1px solid var(--ink);
       border-radius: 20px;
-      background: var(--sage);
-      color: var(--sage-ink);
+      background: var(--sun);
+      color: var(--ink);
       font-size: 10px;
-      font-weight: 700;
+      font-weight: 750;
       letter-spacing: .035em;
       padding: 4px 8px;
     }
     .task-actions { display: flex; flex: 0 0 auto; gap: 7px; }
     .task-actions button { padding: 8px 10px; font-size: 11px; }
-    .complete-button { background: var(--sage); color: var(--sage-ink); }
-    .complete-button:hover { background: #dce6d6; }
-    .delete-button { background: transparent; color: #8c665c; }
-    .delete-button:hover { background: #f5eae6; }
-    .task-card.is-done .task-marker { border-color: #74836b; background: #74836b; color: white; }
-    .task-card.is-done .task-title { color: #8b887f; text-decoration: line-through; }
+    .delete-button { background: #ffe0d9; color: #9c3f43; }
+    .delete-button:hover { background: #ffc5b7; }
     .auth-card { margin-top: 30px; padding: 16px; }
     .auth-card[hidden] { display: none; }
     .auth-label { display: block; margin-bottom: 8px; font-size: 13px; font-weight: 650; }
     .auth-row { display: flex; gap: 9px; }
     .auth-row input { flex: 1; }
-    .auth-button { padding: 0 15px; background: #ede9df; color: var(--ink); font-size: 12px; }
-    .auth-button:hover { background: #e3ddcf; }
+    .auth-button { padding: 0 15px; background: var(--sun); color: var(--ink); font-size: 12px; }
+    .auth-button:hover { background: #ebc62c; }
     .auth-note { margin: 9px 0 0; color: var(--muted); font-size: 11px; }
     @media (max-width: 520px) {
       body { padding: 28px 16px 48px; }
@@ -219,48 +247,46 @@
 </head>
 <body>
   <main>
-    <div class="masthead"><span class="mark" aria-hidden="true">f</span> Fieldnotes · a small task list</div>
+
     <header class="intro">
-      <p class="eyebrow">Make room for what matters</p>
-      <h1>Little by little.</h1>
-      <p class="subtitle">A thoughtful place for the things you want to get done.</p>
+        <div class="masthead">bobelbozzo · task lit</div>
+        <p class="eyebrow">mùviti mbaruzzo</p>
     </header>
 
     <form hx-post="/web/todos"
           hx-swap="none"
-          hx-on::after-request="if (event.detail.successful) { this.reset(); htmx.trigger('#todo-list', 'load') }"
+          hx-on::after-request="if (event.detail.successful) refreshAfterCreate(this)"
           class="composer">
       <div class="composer-fields">
-        <input type="text" name="title" placeholder="What would you like to do?" aria-label="Task title" required>
-        <input type="text" name="group" placeholder="Group (optional)" aria-label="Task group">
+        <input type="text" name="title" placeholder="add task here" aria-label="Task title" required>
+        <input type="text" name="group" placeholder="group (optional)" aria-label="Task group">
       </div>
       <div class="composer-footer">
-        <span class="hint">Give it a home, like personal or work.</span>
-        <button type="submit" class="add-button">Add to my list <span aria-hidden="true">↗</span></button>
+        <button type="submit" class="add-button">add <span aria-hidden="true">+</span></button>
       </div>
     </form>
 
     <div class="list-toolbar">
-      <div class="list-heading">Your list</div>
-      <label class="filter-label" for="group-filter">Group</label>
+      <div class="list-heading">tasks</div>
+      <label class="filter-label" for="group-filter">group</label>
       <select id="group-filter" name="group" class="filter-select"
               hx-get="/web/todos" hx-trigger="change" hx-target="#todo-list"
               hx-swap="innerHTML">
-        <option value="">All groups</option>
+        <option value="">all tasks</option>
       </select>
     </div>
     <p id="filter-error" class="filter-error" role="status" hidden></p>
-    <div id="todo-list" hx-get="/web/todos" hx-trigger="load" hx-include="#group-filter">
+    <div id="todo-list" hx-get="/web/todos" hx-trigger="load, refreshTasks" hx-include="#group-filter">
       <!-- HTMX injects todo_item.html rows here -->
     </div>
 
     <section id="auth-section" class="auth-card" aria-label="Server authentication">
-      <label class="auth-label" for="token-input">Connect to your task server</label>
+      <label class="auth-label" for="token-input">connect to your task server</label>
       <div class="auth-row">
         <input type="password" id="token-input" placeholder="Server access token" autocomplete="off">
-        <button type="button" onclick="saveToken()" class="auth-button">Save token</button>
+        <button type="button" onclick="saveToken()" class="auth-button">save token</button>
       </div>
-      <p class="auth-note">Your token stays in this browser and is sent only with task requests.</p>
+      <p class="auth-note">token stays in this browser and is sent only with task requests</p>
     </section>
   </main>
 
@@ -298,13 +324,23 @@
       }
     }
 
+    async function refreshAfterCreate(form) {
+      const group = form.querySelector('[name="group"]').value.trim();
+      const selectedGroup = document.getElementById('group-filter').value;
+      form.reset();
+      await loadGroupFilterOptions();
+      const filter = document.getElementById('group-filter');
+      filter.value = selectedGroup && selectedGroup !== group ? group : selectedGroup;
+      htmx.trigger('#todo-list', 'refreshTasks');
+    }
+
     function saveToken() {
       const input = document.getElementById('token-input');
       if (input.value.trim()) {
         localStorage.setItem('app_bearer_token', input.value.trim());
         document.getElementById('auth-section').hidden = true;
         loadGroupFilterOptions();
-        htmx.trigger('#todo-list', 'load');
+        htmx.trigger('#todo-list', 'refreshTasks');
       }
     }
 

@@ -6,6 +6,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"go-app/internal/task"
 )
 
 func TestRegisterStaticRoutesServesPWAAssetsPublicly(t *testing.T) {
@@ -42,5 +44,36 @@ func TestRegisterStaticRoutesServesPWAAssetsPublicly(t *testing.T) {
 	if !strings.Contains(pageResponse.Body.String(), `rel="manifest" href="/manifest.json"`) ||
 		!strings.Contains(pageResponse.Body.String(), `navigator.serviceWorker.register('/sw.js')`) {
 		t.Error("page does not link and register the PWA manifest and service worker")
+	}
+	if !strings.Contains(pageResponse.Body.String(), `hx-on::after-request="if (event.detail.successful) refreshAfterCreate(this)"`) ||
+		!strings.Contains(pageResponse.Body.String(), `htmx.trigger('#todo-list', 'refreshTasks')`) {
+		t.Error("successful task creation does not refresh the task list")
+	}
+}
+
+func TestRenderItemHasClickableCompletionCheckbox(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		done      bool
+		isChecked bool
+		label     string
+	}{
+		{name: "not done", label: `aria-label="Complete Write tests"`},
+		{name: "done", done: true, isChecked: true, label: `aria-label="Mark Write tests as not done"`},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			response := httptest.NewRecorder()
+			RenderItem(response, task.Task{ID: 3, Title: "Write tests", Done: test.done})
+			body := response.Body.String()
+			if !strings.Contains(body, `type="checkbox"`) ||
+				!strings.Contains(body, `hx-patch="/web/todos/3/toggle"`) ||
+				!strings.Contains(body, `hx-trigger="change"`) ||
+				!strings.Contains(body, test.label) {
+				t.Fatalf("rendered item is missing the toggle checkbox behavior: %s", body)
+			}
+			if strings.Contains(body, "checked") != test.isChecked {
+				t.Fatalf("checkbox checked state does not match done=%t: %s", test.done, body)
+			}
+		})
 	}
 }

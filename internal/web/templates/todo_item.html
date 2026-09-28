@@ -1,6 +1,13 @@
 <article id="todo-{{ .ID }}" class="task-card{{ if .Done }} is-done{{ end }}">
   <div class="task-main">
-    <span class="task-marker" aria-hidden="true">{{ if .Done }}✓{{ end }}</span>
+    <input type="checkbox"
+           class="task-checkbox"
+           {{ if .Done }}checked{{ end }}
+           hx-patch="/web/todos/{{ .ID }}/toggle"
+           hx-trigger="change"
+           hx-target="#todo-{{ .ID }}"
+           hx-swap="outerHTML"
+           aria-label="{{ if .Done }}Mark {{ .Title }} as not done{{ else }}Complete {{ .Title }}{{ end }}">
     <div class="task-copy">
       <p class="task-title">{{ .Title }}</p>
       {{ if .Group }}
@@ -9,13 +16,6 @@
     </div>
   </div>
   <div class="task-actions">
-    <button hx-patch="/web/todos/{{ .ID }}/toggle"
-            hx-target="#todo-{{ .ID }}"
-            hx-swap="outerHTML"
-            class="complete-button"
-            aria-label="{{ if .Done }}Mark {{ .Title }} as not done{{ else }}Complete {{ .Title }}{{ end }}">
-      {{ if .Done }}Undo{{ else }}Done{{ end }}
-    </button>
     <button hx-delete="/web/todos/{{ .ID }}"
             hx-target="#todo-{{ .ID }}"
             hx-swap="delete"
