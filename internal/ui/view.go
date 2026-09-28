@@ -61,7 +61,7 @@ func (m Model) View() string {
 		_, _ = s.WriteString("New Task: " + m.textInput.View() + "\n")
 		s.WriteString(helpStyle.Render("press enter to save • esc to cancel"))
 	} else {
-		s.WriteString(helpStyle.Render("j/k/↑/↓: navigate • space: toggle • a: add • g: groups menu • d: delete • q: quit"))
+		s.WriteString(helpStyle.Render("j/k/↑/↓: navigate • space: toggle • a: add • g: groups menu • r: refresh • d: delete • q: quit"))
 	}
 
 	return s.String()

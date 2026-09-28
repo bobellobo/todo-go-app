@@ -51,6 +51,7 @@ func main() {
 	protectedMux.HandleFunc("DELETE /tasks/{id}", deleteTask)
 	protectedMux.HandleFunc("GET /groups", getGroups)
 	protectedMux.HandleFunc("GET /web/todos", getWebTodos)
+	protectedMux.HandleFunc("GET /web/groups", getWebGroups)
 	protectedMux.HandleFunc("POST /web/todos", createWebTodo)
 	protectedMux.HandleFunc("PATCH /web/todos/{id}/toggle", toggleWebTodo)
 	protectedMux.HandleFunc("DELETE /web/todos/{id}", deleteTask)
@@ -134,6 +135,34 @@ func getWebTodos(w http.ResponseWriter, r *http.Request) {
 	web.RenderList(w, items)
 }
 
+func getWebGroups(w http.ResponseWriter, r *http.Request) {
+	rows, err := db.Query("SELECT DISTINCT task_group FROM tasks WHERE COALESCE(task_group, '') <> '' ORDER BY task_group")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	groups := []string{}
+	for rows.Next() {
+		var group string
+		if err := rows.Scan(&group); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		groups = append(groups, group)
+	}
+	if err := rows.Err(); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(groups); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
 func createWebTodo(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Invalid form data", http.StatusBadRequest)
@@ -144,8 +173,9 @@ func createWebTodo(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Title is required", http.StatusBadRequest)
 		return
 	}
+	group := strings.TrimSpace(r.FormValue("group"))
 
-	result, err := db.Exec("INSERT INTO tasks (title) VALUES (?)", title)
+	result, err := db.Exec("INSERT INTO tasks (title, task_group) VALUES (?, ?)", title, group)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -155,7 +185,7 @@ func createWebTodo(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	web.RenderItem(w, task.Task{ID: int(id), Title: title})
+	web.RenderItem(w, task.Task{ID: int(id), Title: title, Group: group})
 }
 
 func toggleWebTodo(w http.ResponseWriter, r *http.Request) {

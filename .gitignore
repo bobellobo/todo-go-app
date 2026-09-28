@@ -1,5 +1,5 @@
 app.db
-server
+/server
 taskctl
 taskctl.exe
 Launch-TodoTUI.ps1

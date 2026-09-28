@@ -15,11 +15,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tasksMsg:
 		m.tasks = msg
+		m.err = nil
 		if m.cursor >= len(m.tasks) && len(m.tasks) > 0 {
 			m.cursor = len(m.tasks) - 1
 		}
 
 	case groupsMsg:
+		m.err = nil
 		items := []list.Item{
 			groupItem{name: "", count: 0}, // Option for "All Tasks"
 		}

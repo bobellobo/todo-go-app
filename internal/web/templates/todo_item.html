@@ -1,23 +1,25 @@
-<div id="todo-{{ .ID }}" class="flex items-center justify-between p-3 bg-white rounded shadow-sm border border-gray-200">
-  <span class="{{ if .Done }}line-through text-gray-400{{ else }}text-gray-800{{ end }} flex-grow mr-2 text-sm">
-    {{ .Title }}
-  </span>
-
-  <div class="flex gap-2">
-    <!-- Toggle Complete Status -->
+<article id="todo-{{ .ID }}" class="task-card{{ if .Done }} is-done{{ end }}">
+  <div class="task-main">
+    <span class="task-marker" aria-hidden="true">{{ if .Done }}✓{{ end }}</span>
+    <div class="task-copy">
+      <p class="task-title">{{ .Title }}</p>
+      {{ if .Group }}
+      <div class="task-meta"><span class="group-badge">{{ .Group }}</span></div>
+      {{ end }}
+    </div>
+  </div>
+  <div class="task-actions">
     <button hx-patch="/web/todos/{{ .ID }}/toggle"
             hx-target="#todo-{{ .ID }}"
             hx-swap="outerHTML"
-            class="text-xs px-2.5 py-1 rounded border {{ if .Done }}bg-gray-100 text-gray-600{{ else }}bg-green-50 text-green-700 border-green-200{{ end }}">
+            class="complete-button"
+            aria-label="{{ if .Done }}Mark {{ .Title }} as not done{{ else }}Complete {{ .Title }}{{ end }}">
       {{ if .Done }}Undo{{ else }}Done{{ end }}
     </button>
-
-    <!-- Delete Task -->
     <button hx-delete="/web/todos/{{ .ID }}"
             hx-target="#todo-{{ .ID }}"
             hx-swap="delete"
-            class="text-xs px-2.5 py-1 rounded bg-red-50 text-red-600 border border-red-200">
-      Delete
-    </button>
+            class="delete-button"
+            aria-label="Delete {{ .Title }}">Delete</button>
   </div>
-</div>
+</article>

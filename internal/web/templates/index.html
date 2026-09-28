@@ -3,38 +3,267 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Todo App</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <meta name="theme-color" content="#f6f3ec">
+  <title>Little by little — Fieldnotes</title>
   <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #f6f3ec;
+      --card: #fffefa;
+      --ink: #292823;
+      --muted: #77746b;
+      --line: #e8e3d8;
+      --accent: #6b5b45;
+      --accent-dark: #514432;
+      --sage: #e9eee5;
+      --sage-ink: #516348;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      min-height: 100vh;
+      margin: 0;
+      padding: 48px 20px 72px;
+      background:
+        radial-gradient(ellipse at 12% 0%, rgba(222, 214, 194, .42), transparent 32rem),
+        var(--paper);
+      color: var(--ink);
+      font-family: "Segoe UI", "Trebuchet MS", sans-serif;
+    }
+    main { width: min(100%, 680px); margin: 0 auto; }
+    .masthead {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      margin-bottom: 54px;
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+    .mark {
+      display: grid;
+      width: 34px;
+      height: 34px;
+      place-items: center;
+      border: 1px solid #d8d0c0;
+      border-radius: 50%;
+      font-family: Georgia, serif;
+      font-size: 18px;
+      font-weight: 400;
+      letter-spacing: 0;
+    }
+    .intro { margin-bottom: 30px; }
+    .eyebrow {
+      margin: 0 0 11px;
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+    }
+    h1 {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(38px, 9vw, 58px);
+      font-weight: 400;
+      letter-spacing: -.045em;
+      line-height: 1.04;
+    }
+    .subtitle { margin: 14px 0 0; color: var(--muted); font-size: 15px; }
+    .composer, .auth-card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--card);
+      box-shadow: 0 12px 30px rgba(62, 53, 37, .045);
+    }
+    .composer { padding: 19px; margin-bottom: 34px; }
+    .composer-fields {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(145px, .42fr);
+      gap: 10px;
+    }
+    input {
+      width: 100%;
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      outline: none;
+      background: #fff;
+      color: var(--ink);
+      font: inherit;
+      font-size: 14px;
+      padding: 12px 13px;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    input::placeholder { color: #a09b90; }
+    input:focus { border-color: #a89a80; box-shadow: 0 0 0 3px rgba(107, 91, 69, .12); }
+    .composer-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 13px;
+    }
+    .hint { color: var(--muted); font-size: 12px; }
+    button {
+      border: 0;
+      border-radius: 9px;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 650;
+      transition: background .15s, transform .15s;
+    }
+    button:active { transform: translateY(1px); }
+    .add-button { padding: 11px 17px; background: var(--accent); color: white; font-size: 13px; }
+    .add-button:hover { background: var(--accent-dark); }
+    .list-heading {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 13px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+    .list-heading::after { height: 1px; flex: 1; background: var(--line); content: ""; }
+    .list-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 13px;
+    }
+    .list-toolbar .list-heading { flex: 1; margin: 0; }
+    .filter-label { color: var(--muted); font-size: 11px; }
+    .filter-select {
+      width: auto;
+      min-width: 135px;
+      padding: 8px 30px 8px 10px;
+      border-radius: 9px;
+      font-size: 12px;
+    }
+    .filter-error { margin: -5px 0 12px; color: #9a4f3f; font-size: 12px; }
+    #todo-list { display: grid; gap: 9px; }
+    .task-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 15px 16px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: var(--card);
+      box-shadow: 0 5px 15px rgba(62, 53, 37, .035);
+    }
+    .task-main { display: flex; min-width: 0; align-items: flex-start; gap: 12px; }
+    .task-marker {
+      display: grid;
+      width: 20px;
+      height: 20px;
+      flex: 0 0 20px;
+      place-items: center;
+      margin-top: 1px;
+      border: 1px solid #c9c2b3;
+      border-radius: 50%;
+      color: transparent;
+      font-size: 12px;
+      line-height: 1;
+    }
+    .task-copy { min-width: 0; }
+    .task-title { margin: 0; overflow-wrap: anywhere; font-size: 14px; line-height: 1.45; }
+    .task-meta { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 7px; }
+    .group-badge {
+      border-radius: 20px;
+      background: var(--sage);
+      color: var(--sage-ink);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .035em;
+      padding: 4px 8px;
+    }
+    .task-actions { display: flex; flex: 0 0 auto; gap: 7px; }
+    .task-actions button { padding: 8px 10px; font-size: 11px; }
+    .complete-button { background: var(--sage); color: var(--sage-ink); }
+    .complete-button:hover { background: #dce6d6; }
+    .delete-button { background: transparent; color: #8c665c; }
+    .delete-button:hover { background: #f5eae6; }
+    .task-card.is-done .task-marker { border-color: #74836b; background: #74836b; color: white; }
+    .task-card.is-done .task-title { color: #8b887f; text-decoration: line-through; }
+    .auth-card { margin-top: 30px; padding: 16px; }
+    .auth-card[hidden] { display: none; }
+    .auth-label { display: block; margin-bottom: 8px; font-size: 13px; font-weight: 650; }
+    .auth-row { display: flex; gap: 9px; }
+    .auth-row input { flex: 1; }
+    .auth-button { padding: 0 15px; background: #ede9df; color: var(--ink); font-size: 12px; }
+    .auth-button:hover { background: #e3ddcf; }
+    .auth-note { margin: 9px 0 0; color: var(--muted); font-size: 11px; }
+    @media (max-width: 520px) {
+      body { padding: 28px 16px 48px; }
+      .masthead { margin-bottom: 43px; }
+      .composer { padding: 14px; }
+      .composer-fields { grid-template-columns: 1fr; }
+      .hint { max-width: 170px; line-height: 1.4; }
+    }
+    @media (max-width: 430px) {
+      .task-card { align-items: flex-start; gap: 8px; padding: 13px; }
+      .task-actions { gap: 3px; }
+      .task-actions button { padding: 7px; }
+    }
+  </style>
 </head>
-<body class="bg-gray-100 text-gray-900 max-w-md mx-auto p-4 min-h-screen">
+<body>
+  <main>
+    <div class="masthead"><span class="mark" aria-hidden="true">f</span> Fieldnotes · a small task list</div>
+    <header class="intro">
+      <p class="eyebrow">Make room for what matters</p>
+      <h1>Little by little.</h1>
+      <p class="subtitle">A thoughtful place for the things you want to get done.</p>
+    </header>
 
-  <h1 class="text-2xl font-bold mb-4 text-center">My Tasks</h1>
+    <form hx-post="/web/todos"
+          hx-swap="none"
+          hx-on::after-request="if (event.detail.successful) { this.reset(); htmx.trigger('#todo-list', 'load') }"
+          class="composer">
+      <div class="composer-fields">
+        <input type="text" name="title" placeholder="What would you like to do?" aria-label="Task title" required>
+        <input type="text" name="group" placeholder="Group (optional)" aria-label="Task group">
+      </div>
+      <div class="composer-footer">
+        <span class="hint">Give it a home, like personal or work.</span>
+        <button type="submit" class="add-button">Add to my list <span aria-hidden="true">↗</span></button>
+      </div>
+    </form>
 
-  <!-- Auth Token Input (Hidden if token exists in localStorage) -->
-  <div id="auth-section" class="mb-4 p-4 bg-white rounded shadow-sm border">
-    <label class="block text-xs font-semibold uppercase text-gray-500 mb-1">Bearer Token</label>
-    <input type="password" id="token-input" placeholder="Enter server token..." class="border p-2 w-full rounded mb-2 text-sm">
-    <button onclick="saveToken()" class="bg-blue-600 text-white px-4 py-2 rounded w-full text-sm font-medium hover:bg-blue-700">Set Token</button>
-  </div>
+    <div class="list-toolbar">
+      <div class="list-heading">Your list</div>
+      <label class="filter-label" for="group-filter">Group</label>
+      <select id="group-filter" name="group" class="filter-select"
+              hx-get="/web/todos" hx-trigger="change" hx-target="#todo-list"
+              hx-swap="innerHTML">
+        <option value="">All groups</option>
+      </select>
+    </div>
+    <p id="filter-error" class="filter-error" role="status" hidden></p>
+    <div id="todo-list" hx-get="/web/todos" hx-trigger="load" hx-include="#group-filter">
+      <!-- HTMX injects todo_item.html rows here -->
+    </div>
 
-  <!-- Create Task Form -->
-  <form hx-post="/web/todos"
-        hx-target="#todo-list"
-        hx-swap="beforeend"
-        hx-on::after-request="this.reset()"
-        class="flex gap-2 mb-4">
-    <input type="text" name="title" placeholder="New task..." required class="border p-2 flex-grow rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded font-medium text-sm hover:bg-blue-700">Add</button>
-  </form>
-
-  <!-- Todo List Container -->
-  <div id="todo-list" hx-get="/web/todos" hx-trigger="load" class="space-y-2">
-    <!-- HTMX injects todo_item.html rows here -->
-  </div>
+    <section id="auth-section" class="auth-card" aria-label="Server authentication">
+      <label class="auth-label" for="token-input">Connect to your task server</label>
+      <div class="auth-row">
+        <input type="password" id="token-input" placeholder="Server access token" autocomplete="off">
+        <button type="button" onclick="saveToken()" class="auth-button">Save token</button>
+      </div>
+      <p class="auth-note">Your token stays in this browser and is sent only with task requests.</p>
+    </section>
+  </main>
 
   <script>
-    // Automatically attach Bearer token stored in browser to every HTMX request
     document.body.addEventListener('htmx:configRequest', (evt) => {
       const token = localStorage.getItem('app_bearer_token');
       if (token) {
@@ -42,18 +271,45 @@
       }
     });
 
+    async function loadGroupFilterOptions() {
+      const token = localStorage.getItem('app_bearer_token');
+      if (!token) return;
+
+      const error = document.getElementById('filter-error');
+      try {
+        const response = await fetch('/web/groups', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (!response.ok) {
+          throw new Error('Could not load groups (' + response.status + ').');
+        }
+
+        const groups = await response.json();
+        const filter = document.getElementById('group-filter');
+        const selectedGroup = filter.value;
+        filter.replaceChildren(new Option('All groups', ''));
+        groups.forEach((group) => filter.add(new Option(group, group)));
+        if (groups.includes(selectedGroup)) filter.value = selectedGroup;
+        error.hidden = true;
+      } catch (err) {
+        error.textContent = err.message || 'Could not load groups.';
+        error.hidden = false;
+      }
+    }
+
     function saveToken() {
       const input = document.getElementById('token-input');
-      if (input.value) {
+      if (input.value.trim()) {
         localStorage.setItem('app_bearer_token', input.value.trim());
-        document.getElementById('auth-section').classList.add('hidden');
+        document.getElementById('auth-section').hidden = true;
+        loadGroupFilterOptions();
         htmx.trigger('#todo-list', 'load');
       }
     }
 
-    // Hide token box on startup if token is already set
     if (localStorage.getItem('app_bearer_token')) {
-      document.getElementById('auth-section').classList.add('hidden');
+      document.getElementById('auth-section').hidden = true;
+      loadGroupFilterOptions();
     }
   </script>
 </body>
